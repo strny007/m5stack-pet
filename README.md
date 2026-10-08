@@ -18,6 +18,10 @@ Tap one of the four buttons along the bottom of the screen:
   screen, then confirm.
 - Pet age is counted in accumulated powered-on time, persists across restarts,
   and is shown in days in the top bar.
+- The food meter decreases over time; if it stays at zero for five accumulated
+  powered-on days, the pet dies. Feeding before then restores the meter and
+  cancels the starvation countdown. Reset the game from the death screen to
+  start over.
 - Tap the pet's name in the top bar to rename it with the on-screen keyboard.
 - Tap the pet to cycle between the round-eared, cat, and bunny avatars; the
   selected look is saved.

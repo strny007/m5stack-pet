@@ -200,6 +200,23 @@ void PetDisplay::draw(const PetState& pet, uint32_t now) {
     return;
   }
 
+  if (pet.dead) {
+    canvas_.fillScreen(kBackground);
+    canvas_.fillRoundRect(8, 7, 304, 27, 8, kPanel);
+    canvas_.setTextColor(kMuted, kPanel);
+    canvas_.setCursor(17, 14);
+    canvas_.print(pet.name);
+    canvas_.setTextColor(kCoral, kBackground);
+    canvas_.setCursor(91, 75);
+    canvas_.print("PET HAS DIED");
+    canvas_.setTextColor(kWhite, kBackground);
+    canvas_.setCursor(76, 105);
+    canvas_.print("Starved after five days.");
+    drawKey(80, 151, 160, "RESET", kCoral);
+    canvas_.pushSprite(0, 0);
+    return;
+  }
+
   canvas_.fillScreen(kBackground);
   canvas_.fillRoundRect(8, 7, 304, 27, 8, kPanel);
   canvas_.setTextColor(kMint, kPanel);
@@ -308,6 +325,14 @@ PetAction PetDisplay::handleNameEditorTouch(int x, int y, PetState& pet) {
 PetAction PetDisplay::handleTouch(int x, int y, PetState& pet) {
   if (nameEditorOpen_) {
     return handleNameEditorTouch(x, y, pet);
+  }
+
+  if (pet.dead) {
+    if (x >= 80 && x < 240 && y >= 151 && y < 180) {
+      nameEditorOpen_ = true;
+      resetConfirmationOpen_ = true;
+    }
+    return PetAction::none;
   }
 
   if (y >= 7 && y < 34) {

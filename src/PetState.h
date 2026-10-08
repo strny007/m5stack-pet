@@ -18,4 +18,6 @@ struct PetState {
   float tiltX = 0;
   float tiltY = 0;
   uint64_t aliveMs = 0;
+  uint64_t hungryMs = 0;
+  bool dead = false;
 };

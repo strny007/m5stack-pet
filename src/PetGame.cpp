@@ -12,6 +12,7 @@ constexpr uint32_t kReactionDurationMs = 2200;
 constexpr uint32_t kBatteryRefreshMs = 15000;
 constexpr uint32_t kHapticDurationMs = 55;
 constexpr uint8_t kPetNameMaxLength = 12;
+constexpr uint64_t kStarvationDurationMs = 5ULL * 24 * 60 * 60 * 1000;
 
 uint8_t clampNeed(int value) {
   if (value < 0) return 0;
@@ -37,7 +38,11 @@ void PetGame::begin() {
 
 void PetGame::load() {
   if (!storageReady_) return;
-  pet_.hunger = clampNeed(preferences_.getUChar("hunger", pet_.hunger));
+  const bool foodMeterMigrated = preferences_.getBool("food_v2", false);
+  if (preferences_.isKey("hunger")) {
+    pet_.hunger = clampNeed(preferences_.getUChar("hunger", pet_.hunger));
+    if (!foodMeterMigrated) pet_.hunger = 100 - pet_.hunger;
+  }
   pet_.happiness = clampNeed(preferences_.getUChar("happy", pet_.happiness));
   pet_.energy = clampNeed(preferences_.getUChar("energy", pet_.energy));
   pet_.cleanliness = clampNeed(preferences_.getUChar("clean", pet_.cleanliness));
@@ -46,12 +51,17 @@ void PetGame::load() {
   pet_.avatar = preferences_.getUChar("avatar", pet_.avatar);
   if (pet_.avatar >= 3) pet_.avatar = 0;
   pet_.aliveMs = preferences_.getULong64("alive", pet_.aliveMs);
+  pet_.hungryMs = preferences_.getULong64("hungry_ms", pet_.hungryMs);
+  pet_.dead = preferences_.getBool("dead", false);
+  if (pet_.hunger > 0) pet_.hungryMs = 0;
+  if (pet_.hungryMs >= kStarvationDurationMs) pet_.dead = true;
   if (preferences_.isKey("name")) {
     pet_.name = preferences_.getString("name", pet_.name);
   }
   if (pet_.name.length() > kPetNameMaxLength) {
     pet_.name.remove(kPetNameMaxLength);
   }
+  if (!foodMeterMigrated) save();
 }
 
 void PetGame::save() {
@@ -65,6 +75,9 @@ void PetGame::save() {
   preferences_.putUChar("avatar", pet_.avatar);
   preferences_.putString("name", pet_.name);
   preferences_.putULong64("alive", pet_.aliveMs);
+  preferences_.putULong64("hungry_ms", pet_.hungryMs);
+  preferences_.putBool("dead", pet_.dead);
+  preferences_.putBool("food_v2", true);
 }
 
 PetState& PetGame::state() {
@@ -209,7 +222,7 @@ void PetGame::updateShakeDetection(uint32_t now) {
 void PetGame::updateNeeds(uint32_t now) {
   while (static_cast<uint32_t>(now - lastNeedTick_) >= kNeedTickMs) {
     lastNeedTick_ += kNeedTickMs;
-    pet_.hunger = clampNeed(pet_.hunger + 1);
+    pet_.hunger = clampNeed(pet_.hunger - 1);
     pet_.cleanliness = clampNeed(pet_.cleanliness - 1);
     pet_.happiness = clampNeed(pet_.happiness - 1);
 
@@ -246,11 +259,13 @@ void PetGame::handleAction(PetAction action) {
   static constexpr Note kPlaySound[] = {{1047, 75}, {1319, 75}, {1568, 140}};
   static constexpr Note kWashSound[] = {{740, 100}, {988, 100}};
   static constexpr Note kSleepSound[] = {{659, 130}, {523, 180}};
+  if (pet_.dead && action != PetAction::resetGame) return;
   const bool wasSleeping = pet_.sleeping;
 
   switch (action) {
     case PetAction::feed:
-      pet_.hunger = clampNeed(pet_.hunger - 28);
+      pet_.hunger = clampNeed(pet_.hunger + 28);
+      if (pet_.hunger > 0) pet_.hungryMs = 0;
       pet_.happiness = clampNeed(pet_.happiness + 4);
       startSound(kFeedSound, sizeof(kFeedSound) / sizeof(kFeedSound[0]));
       pulseVibration(170);
@@ -259,7 +274,7 @@ void PetGame::handleAction(PetAction action) {
       if (pet_.sleeping) return;
       pet_.happiness = clampNeed(pet_.happiness + 22);
       pet_.energy = clampNeed(pet_.energy - 12);
-      pet_.hunger = clampNeed(pet_.hunger + 5);
+      pet_.hunger = clampNeed(pet_.hunger - 5);
       startSound(kPlaySound, sizeof(kPlaySound) / sizeof(kPlaySound[0]));
       pulseVibration(170);
       break;
@@ -297,12 +312,32 @@ void PetGame::handleAction(PetAction action) {
 }
 
 void PetGame::update(uint32_t now) {
-  pet_.aliveMs += static_cast<uint32_t>(now - lastAgeUpdate_);
+  const uint32_t elapsed = static_cast<uint32_t>(now - lastAgeUpdate_);
   lastAgeUpdate_ = now;
-  updateShakeDetection(now);
+  if (!pet_.dead) {
+    pet_.aliveMs += elapsed;
+    if (pet_.hunger == 0) {
+      pet_.hungryMs += elapsed;
+      if (pet_.hungryMs >= kStarvationDurationMs) {
+        pet_.dead = true;
+        pet_.sleeping = false;
+        pet_.reactionUntil = 0;
+        activeNotes_ = nullptr;
+        hapticUntil_ = 0;
+        M5.Power.setVibration(0);
+        save();
+        Serial.println("Pet died from starvation.");
+      }
+    } else {
+      pet_.hungryMs = 0;
+    }
+  }
+  if (!pet_.dead) {
+    updateShakeDetection(now);
+  }
   updateSound(now);
   updateVibration(now);
-  updateNeeds(now);
+  if (!pet_.dead) updateNeeds(now);
 
   if (static_cast<uint32_t>(now - lastBatteryRefresh_) >= kBatteryRefreshMs) {
     refreshBattery(now);
