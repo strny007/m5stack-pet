@@ -41,6 +41,9 @@ class PetGame {
   float previousAccelX_ = 0;
   float previousAccelY_ = 0;
   float previousAccelZ_ = 0;
+  float gravityAccelX_ = 0;
+  float gravityAccelY_ = 0;
+  bool gravityReady_ = false;
   const Note* activeNotes_ = nullptr;
   size_t activeNoteCount_ = 0;
   size_t activeNoteIndex_ = 0;

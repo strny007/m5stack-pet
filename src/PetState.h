@@ -15,4 +15,6 @@ struct PetState {
   bool batteryLevelValid = false;
   bool batteryCharging = false;
   uint32_t reactionUntil = 0;
+  float tiltX = 0;
+  float tiltY = 0;
 };

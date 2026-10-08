@@ -7,6 +7,7 @@ namespace {
 PetDisplay display;
 PetGame game;
 uint32_t lastDraw = 0;
+constexpr uint32_t kFrameIntervalMs = 33;
 }  // namespace
 
 void setup() {
@@ -33,7 +34,7 @@ void loop() {
   }
   game.update(now);
 
-  if (static_cast<uint32_t>(now - lastDraw) >= 400) {
+  if (static_cast<uint32_t>(now - lastDraw) >= kFrameIntervalMs) {
     display.draw(game.state(), now);
     lastDraw = now;
   }

@@ -1,5 +1,6 @@
 #include "PetDisplay.h"
 
+#include <cmath>
 #include <cstring>
 
 namespace {
@@ -59,13 +60,17 @@ void PetDisplay::drawNeed(const char* label, uint8_t value, int x, int y,
 
 void PetDisplay::drawPet(const PetState& pet, uint32_t now) {
   const bool excited = reacting(pet, now);
-  const int bounce = pet.sleeping
-      ? 0
-      : excited ? static_cast<int>((now / 75) % 2) * 5
-                : static_cast<int>((now / 450) % 2);
-  const int centerX =
-      160 + (excited ? static_cast<int>((now / 75) % 2) * 5 - 2 : 0);
-  const int centerY = 150 + bounce;
+  constexpr float kTwoPi = 6.28318530718f;
+  const float phase = static_cast<float>(now % (excited ? 280 : 1600)) /
+                      static_cast<float>(excited ? 280 : 1600) * kTwoPi;
+  const float bounce = pet.sleeping
+      ? 0.0f
+      : excited ? (1.0f - std::cos(phase)) * 2.5f
+                : (1.0f - std::cos(phase)) * 0.8f;
+  const float wiggle = excited ? std::sin(phase) * 2.0f : 0.0f;
+  const int centerX = static_cast<int>(std::lround(160.0f + pet.tiltX + wiggle));
+  const int centerY =
+      static_cast<int>(std::lround(150.0f + pet.tiltY + bounce));
   const uint16_t avatarColors[] = {kYellow, 0x5EFA, 0xB5BF};
   const uint16_t bodyColor =
       pet.sleeping ? kMuted : avatarColors[pet.avatar % 3];

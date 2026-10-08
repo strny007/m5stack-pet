@@ -13,6 +13,7 @@ Tap one of the four buttons along the bottom of the screen:
 - **Wash** improves cleanliness.
 - **Sleep / Wake** restores energy over time while the pet sleeps.
 - **Shake** the Core2 to wake the pet if it is asleep and make it excited.
+- Tilt the Core2 to make the pet lean and slide with gravity.
 - Tap the pet's name in the top bar to rename it with the on-screen keyboard.
 - Tap the pet to cycle between the round-eared, cat, and bunny avatars; the
   selected look is saved.

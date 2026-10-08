@@ -122,8 +122,30 @@ void PetGame::updateShakeDetection(uint32_t now) {
   float accelZ;
   if (!M5.Imu.getAccel(&accelX, &accelY, &accelZ)) {
     accelReady_ = false;
+    gravityReady_ = false;
+    pet_.tiltX += (0.0f - pet_.tiltX) * 0.12f;
+    pet_.tiltY += (0.0f - pet_.tiltY) * 0.12f;
     return;
   }
+
+  if (!gravityReady_) {
+    gravityAccelX_ = accelX;
+    gravityAccelY_ = accelY;
+    gravityReady_ = true;
+  } else {
+    constexpr float kGravityFilter = 0.08f;
+    gravityAccelX_ += (accelX - gravityAccelX_) * kGravityFilter;
+    gravityAccelY_ += (accelY - gravityAccelY_) * kGravityFilter;
+  }
+
+  const float horizontalTilt = gravityAccelX_ * -22.0f;
+  const float verticalTilt = gravityAccelY_ * -9.0f;
+  const float targetX =
+      horizontalTilt < -22 ? -22 : horizontalTilt > 22 ? 22 : horizontalTilt;
+  const float targetY =
+      verticalTilt < -7 ? -7 : verticalTilt > 7 ? 7 : verticalTilt;
+  pet_.tiltX += (targetX - pet_.tiltX) * 0.12f;
+  pet_.tiltY += (targetY - pet_.tiltY) * 0.12f;
 
   if (!accelReady_) {
     previousAccelX_ = accelX;
