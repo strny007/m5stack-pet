@@ -10,6 +10,7 @@ class PetGame {
   void begin();
   void update(uint32_t now);
   void handleAction(PetAction action);
+  void reset();
   PetState& state();
 
  private:
@@ -33,6 +34,7 @@ class PetGame {
   PetState pet_;
   uint32_t lastNeedTick_ = 0;
   uint32_t lastSave_ = 0;
+  uint32_t lastAgeUpdate_ = 0;
   uint32_t lastBatteryRefresh_ = 0;
   uint32_t hapticUntil_ = 0;
   uint32_t lastShakeImpulse_ = 0;

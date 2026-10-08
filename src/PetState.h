@@ -17,4 +17,5 @@ struct PetState {
   uint32_t reactionUntil = 0;
   float tiltX = 0;
   float tiltY = 0;
+  uint64_t aliveMs = 0;
 };

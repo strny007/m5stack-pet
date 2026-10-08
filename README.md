@@ -14,19 +14,26 @@ Tap one of the four buttons along the bottom of the screen:
 - **Sleep / Wake** restores energy over time while the pet sleeps.
 - **Shake** the Core2 to wake the pet if it is asleep and make it excited.
 - Tilt the Core2 to make the pet lean and slide with gravity.
+- To reset the pet and its age, tap its name, tap **RESET** on the rename
+  screen, then confirm.
+- Pet age is counted in accumulated powered-on time, persists across restarts,
+  and is shown in days in the top bar.
 - Tap the pet's name in the top bar to rename it with the on-screen keyboard.
 - Tap the pet to cycle between the round-eared, cat, and bunny avatars; the
   selected look is saved.
 - Tap **SND / MUTE** in the top bar to toggle sound; the setting is remembered.
 - The top bar shows battery percentage and a lightning bolt while charging.
 - Care actions and shake reactions give a short vibration.
+- The display sleeps after one minute without touch. Tap anywhere to wake it;
+  the wake tap does not also activate a control.
 
 The pet plays short sound cues when you care for it or shake the device. Shake
 detection requires two quick movements and has a short cooldown to avoid
 accidental repeated reactions.
 
-Needs change once per minute while the device is running. Hunger, happiness,
-energy, and cleanliness are shown as meters on the screen.
+Battery percentage is estimated from voltage, so it can vary with charging and
+load. Needs change once per minute while the device is running. Hunger,
+happiness, energy, and cleanliness are shown as meters on the screen.
 
 ## Build and upload
 

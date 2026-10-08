@@ -13,6 +13,7 @@ enum class PetAction {
   toggleMute,
   cycleAvatar,
   rename,
+  resetGame,
 };
 
 class PetDisplay {
@@ -25,11 +26,13 @@ class PetDisplay {
   void drawNeed(const char* label, uint8_t value, int x, int y, uint16_t color);
   void drawPet(const PetState& pet, uint32_t now);
   void drawButton(int x, const char* label, uint16_t color);
-  void drawKey(int x, int y, int width, const char* label);
+  void drawKey(int x, int y, int width, const char* label, uint16_t color);
   void drawNameEditor();
+  void drawResetConfirmation();
   PetAction handleNameEditorTouch(int x, int y, PetState& pet);
 
   M5Canvas canvas_{&M5.Display};
   String editedName_;
   bool nameEditorOpen_ = false;
+  bool resetConfirmationOpen_ = false;
 };

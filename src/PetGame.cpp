@@ -30,6 +30,7 @@ void PetGame::begin() {
   M5.Speaker.setVolume(pet_.muted ? 0 : 72);
   lastNeedTick_ = millis();
   lastSave_ = lastNeedTick_;
+  lastAgeUpdate_ = lastNeedTick_;
   refreshBattery(lastNeedTick_);
   Serial.println("Tiny Friend ready.");
 }
@@ -44,6 +45,7 @@ void PetGame::load() {
   pet_.muted = preferences_.getBool("muted", false);
   pet_.avatar = preferences_.getUChar("avatar", pet_.avatar);
   if (pet_.avatar >= 3) pet_.avatar = 0;
+  pet_.aliveMs = preferences_.getULong64("alive", pet_.aliveMs);
   if (preferences_.isKey("name")) {
     pet_.name = preferences_.getString("name", pet_.name);
   }
@@ -62,10 +64,36 @@ void PetGame::save() {
   preferences_.putBool("muted", pet_.muted);
   preferences_.putUChar("avatar", pet_.avatar);
   preferences_.putString("name", pet_.name);
+  preferences_.putULong64("alive", pet_.aliveMs);
 }
 
 PetState& PetGame::state() {
   return pet_;
+}
+
+void PetGame::reset() {
+  const int batteryLevel = pet_.batteryLevel;
+  const bool batteryLevelValid = pet_.batteryLevelValid;
+  const bool batteryCharging = pet_.batteryCharging;
+  const float tiltX = pet_.tiltX;
+  const float tiltY = pet_.tiltY;
+  pet_ = PetState{};
+  pet_.batteryLevel = batteryLevel;
+  pet_.batteryLevelValid = batteryLevelValid;
+  pet_.batteryCharging = batteryCharging;
+  pet_.tiltX = tiltX;
+  pet_.tiltY = tiltY;
+
+  const uint32_t now = millis();
+  lastNeedTick_ = now;
+  lastAgeUpdate_ = now;
+  lastSave_ = now;
+  activeNotes_ = nullptr;
+  hapticUntil_ = 0;
+  M5.Power.setVibration(0);
+  M5.Speaker.setVolume(72);
+  save();
+  Serial.println("Pet game reset.");
 }
 
 void PetGame::startSound(const Note* notes, size_t count) {
@@ -198,9 +226,16 @@ void PetGame::updateNeeds(uint32_t now) {
 }
 
 void PetGame::refreshBattery(uint32_t now) {
-  const int level = M5.Power.getBatteryLevel();
-  pet_.batteryLevelValid = level >= 0 && level <= 100;
-  if (pet_.batteryLevelValid) pet_.batteryLevel = level;
+  const int batteryVoltageMv = M5.Power.getBatteryVoltage();
+  pet_.batteryLevelValid = batteryVoltageMv > 0;
+  if (pet_.batteryLevelValid) {
+    constexpr int kEmptyBatteryMv = 3300;
+    constexpr int kFullBatteryMv = 4200;
+    const int level =
+        (batteryVoltageMv - kEmptyBatteryMv) * 100 /
+        (kFullBatteryMv - kEmptyBatteryMv);
+    pet_.batteryLevel = level < 0 ? 0 : level > 100 ? 100 : level;
+  }
   pet_.batteryCharging =
       M5.Power.isCharging() == M5.Power.is_charging_t::is_charging;
   lastBatteryRefresh_ = now;
@@ -250,6 +285,9 @@ void PetGame::handleAction(PetAction action) {
       break;
     case PetAction::rename:
       break;
+    case PetAction::resetGame:
+      reset();
+      return;
     case PetAction::none:
       return;
   }
@@ -259,6 +297,8 @@ void PetGame::handleAction(PetAction action) {
 }
 
 void PetGame::update(uint32_t now) {
+  pet_.aliveMs += static_cast<uint32_t>(now - lastAgeUpdate_);
+  lastAgeUpdate_ = now;
   updateShakeDetection(now);
   updateSound(now);
   updateVibration(now);

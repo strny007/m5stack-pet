@@ -8,6 +8,7 @@ namespace {
 constexpr int kScreenWidth = 320;
 constexpr int kScreenHeight = 240;
 constexpr uint8_t kPetNameMaxLength = 12;
+constexpr uint64_t kMillisecondsPerDay = 86400000ULL;
 
 constexpr uint16_t kBackground = 0x0841;
 constexpr uint16_t kPanel = 0x10A2;
@@ -131,20 +132,27 @@ void PetDisplay::drawButton(int x, const char* label, uint16_t color) {
   canvas_.print(label);
 }
 
-void PetDisplay::drawKey(int x, int y, int width, const char* label) {
+void PetDisplay::drawKey(int x, int y, int width, const char* label,
+                         uint16_t color) {
   canvas_.fillRoundRect(x, y, width, 29, 5, kPanel);
-  canvas_.drawRoundRect(x, y, width, 29, 5, kMint);
-  canvas_.setTextColor(kWhite, kPanel);
+  canvas_.drawRoundRect(x, y, width, 29, 5, color);
+  canvas_.setTextColor(color, kPanel);
   canvas_.setCursor(x + (width - static_cast<int>(strlen(label)) * 6) / 2,
                     y + 10);
   canvas_.print(label);
 }
 
 void PetDisplay::drawNameEditor() {
+  if (resetConfirmationOpen_) {
+    drawResetConfirmation();
+    return;
+  }
+
   canvas_.fillScreen(kBackground);
   canvas_.setTextColor(kMint, kBackground);
   canvas_.setCursor(12, 12);
   canvas_.print("NAME YOUR PET");
+  drawKey(242, 7, 70, "RESET", kCoral);
 
   canvas_.fillRoundRect(10, 38, 300, 30, 6, kPanel);
   canvas_.setTextColor(kWhite, kPanel);
@@ -162,14 +170,27 @@ void PetDisplay::drawNameEditor() {
     const int startX = (kScreenWidth - kRowLengths[row] * 30) / 2;
     for (uint8_t key = 0; key < kRowLengths[row]; ++key) {
       char label[] = {kRows[row][key], '\0'};
-      drawKey(startX + key * 30, kRowY[row], 28, label);
+      drawKey(startX + key * 30, kRowY[row], 28, label, kMint);
     }
   }
 
-  drawKey(8, 190, 70, "SPACE");
-  drawKey(86, 190, 70, "DELETE");
-  drawKey(164, 190, 70, "CANCEL");
-  drawKey(242, 190, 70, "SAVE");
+  drawKey(8, 190, 70, "SPACE", kMint);
+  drawKey(86, 190, 70, "DELETE", kMint);
+  drawKey(164, 190, 70, "CANCEL", kMint);
+  drawKey(242, 190, 70, "SAVE", kMint);
+  canvas_.pushSprite(0, 0);
+}
+
+void PetDisplay::drawResetConfirmation() {
+  canvas_.fillScreen(kBackground);
+  canvas_.setTextColor(kCoral, kBackground);
+  canvas_.setTextDatum(middle_center);
+  canvas_.drawString("RESET PET?", kScreenWidth / 2, 74);
+  canvas_.setTextColor(kWhite, kBackground);
+  canvas_.drawString("This clears its progress and age.", kScreenWidth / 2,
+                     102);
+  drawKey(34, 137, 110, "CANCEL", kMint);
+  drawKey(176, 137, 110, "RESET", kCoral);
   canvas_.pushSprite(0, 0);
 }
 
@@ -184,6 +205,11 @@ void PetDisplay::draw(const PetState& pet, uint32_t now) {
   canvas_.setTextColor(kMint, kPanel);
   canvas_.setCursor(17, 14);
   canvas_.print(pet.name);
+  const uint32_t daysAlive =
+      static_cast<uint32_t>(pet.aliveMs / kMillisecondsPerDay) + 1;
+  canvas_.setTextColor(kMuted, kPanel);
+  canvas_.setCursor(126, 14);
+  canvas_.printf("DAY %lu", static_cast<unsigned long>(daysAlive));
 
   const uint16_t batteryColor =
       pet.batteryLevelValid && pet.batteryLevel < 20 ? kCoral : kMint;
@@ -224,6 +250,23 @@ void PetDisplay::draw(const PetState& pet, uint32_t now) {
 }
 
 PetAction PetDisplay::handleNameEditorTouch(int x, int y, PetState& pet) {
+  if (resetConfirmationOpen_) {
+    if (y < 137 || y >= 166) return PetAction::none;
+    if (x >= 34 && x < 144) {
+      resetConfirmationOpen_ = false;
+    } else if (x >= 176 && x < 286) {
+      resetConfirmationOpen_ = false;
+      nameEditorOpen_ = false;
+      return PetAction::resetGame;
+    }
+    return PetAction::none;
+  }
+
+  if (y >= 7 && y < 36 && x >= 242 && x < 312) {
+    resetConfirmationOpen_ = true;
+    return PetAction::none;
+  }
+
   if (y >= 76 && y < 173) {
     constexpr char kRows[][11] = {"QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"};
     constexpr uint8_t kRowLengths[] = {10, 9, 7};
@@ -272,6 +315,7 @@ PetAction PetDisplay::handleTouch(int x, int y, PetState& pet) {
     if (x < 195) {
       editedName_ = pet.name;
       nameEditorOpen_ = true;
+      resetConfirmationOpen_ = false;
     }
     return PetAction::none;
   }
