@@ -11,6 +11,7 @@ enum class PetAction {
   wash,
   toggleSleep,
   toggleMute,
+  cycleAvatar,
   rename,
 };
 

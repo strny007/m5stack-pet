@@ -9,6 +9,7 @@ struct PetState {
   uint8_t cleanliness = 82;
   bool sleeping = false;
   bool muted = false;
+  uint8_t avatar = 0;
   String name = "Mochi";
   int batteryLevel = 0;
   bool batteryLevelValid = false;

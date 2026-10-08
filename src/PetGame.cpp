@@ -42,6 +42,8 @@ void PetGame::load() {
   pet_.cleanliness = clampNeed(preferences_.getUChar("clean", pet_.cleanliness));
   pet_.sleeping = preferences_.getBool("sleep", false);
   pet_.muted = preferences_.getBool("muted", false);
+  pet_.avatar = preferences_.getUChar("avatar", pet_.avatar);
+  if (pet_.avatar >= 3) pet_.avatar = 0;
   if (preferences_.isKey("name")) {
     pet_.name = preferences_.getString("name", pet_.name);
   }
@@ -58,6 +60,7 @@ void PetGame::save() {
   preferences_.putUChar("clean", pet_.cleanliness);
   preferences_.putBool("sleep", pet_.sleeping);
   preferences_.putBool("muted", pet_.muted);
+  preferences_.putUChar("avatar", pet_.avatar);
   preferences_.putString("name", pet_.name);
 }
 
@@ -219,6 +222,9 @@ void PetGame::handleAction(PetAction action) {
       pet_.muted = !pet_.muted;
       activeNotes_ = nullptr;
       M5.Speaker.setVolume(pet_.muted ? 0 : 72);
+      break;
+    case PetAction::cycleAvatar:
+      pet_.avatar = (pet_.avatar + 1) % 3;
       break;
     case PetAction::rename:
       break;

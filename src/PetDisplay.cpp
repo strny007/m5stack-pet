@@ -66,18 +66,36 @@ void PetDisplay::drawPet(const PetState& pet, uint32_t now) {
   const int centerX =
       160 + (excited ? static_cast<int>((now / 75) % 2) * 5 - 2 : 0);
   const int centerY = 150 + bounce;
-  const uint16_t bodyColor = pet.sleeping ? kMuted : kYellow;
+  const uint16_t avatarColors[] = {kYellow, 0x5EFA, 0xB5BF};
+  const uint16_t bodyColor =
+      pet.sleeping ? kMuted : avatarColors[pet.avatar % 3];
 
   canvas_.fillRoundRect(217, 130, 93, 28, 9, kPanel);
   canvas_.setTextColor(kWhite, kPanel);
   canvas_.setCursor(226, 139);
   canvas_.print(moodText(pet, now));
 
-  canvas_.fillCircle(centerX - 23, centerY - 21, 12, bodyColor);
-  canvas_.fillCircle(centerX + 23, centerY - 21, 12, bodyColor);
+  if (pet.avatar == 1) {
+    canvas_.fillTriangle(centerX - 31, centerY - 13, centerX - 27,
+                         centerY - 48, centerX - 5, centerY - 24, bodyColor);
+    canvas_.fillTriangle(centerX + 31, centerY - 13, centerX + 27,
+                         centerY - 48, centerX + 5, centerY - 24, bodyColor);
+    canvas_.fillTriangle(centerX - 25, centerY - 23, centerX - 24,
+                         centerY - 40, centerX - 13, centerY - 26, kCoral);
+    canvas_.fillTriangle(centerX + 25, centerY - 23, centerX + 24,
+                         centerY - 40, centerX + 13, centerY - 26, kCoral);
+  } else if (pet.avatar == 2) {
+    canvas_.fillRoundRect(centerX - 28, centerY - 56, 15, 42, 7, bodyColor);
+    canvas_.fillRoundRect(centerX + 13, centerY - 56, 15, 42, 7, bodyColor);
+    canvas_.fillRoundRect(centerX - 24, centerY - 51, 7, 28, 3, kCoral);
+    canvas_.fillRoundRect(centerX + 17, centerY - 51, 7, 28, 3, kCoral);
+  } else {
+    canvas_.fillCircle(centerX - 23, centerY - 21, 12, bodyColor);
+    canvas_.fillCircle(centerX + 23, centerY - 21, 12, bodyColor);
+    canvas_.fillCircle(centerX - 23, centerY - 21, 5, kCoral);
+    canvas_.fillCircle(centerX + 23, centerY - 21, 5, kCoral);
+  }
   canvas_.fillCircle(centerX, centerY, 32, bodyColor);
-  canvas_.fillCircle(centerX - 23, centerY - 21, 5, kCoral);
-  canvas_.fillCircle(centerX + 23, centerY - 21, 5, kCoral);
 
   if (pet.sleeping) {
     canvas_.drawLine(centerX - 13, centerY - 3, centerX - 6, centerY - 3,
@@ -170,11 +188,15 @@ void PetDisplay::draw(const PetState& pet, uint32_t now) {
     canvas_.fillRect(200, 15, 1 + pet.batteryLevel * 9 / 100, 7,
                      batteryColor);
   }
+  if (pet.batteryCharging) {
+    canvas_.drawLine(207, 14, 203, 18, kYellow);
+    canvas_.drawLine(203, 18, 207, 18, kYellow);
+    canvas_.drawLine(207, 18, 204, 22, kYellow);
+  }
   canvas_.setTextColor(kMuted, kPanel);
   canvas_.setCursor(219, 14);
   if (pet.batteryLevelValid) {
-    canvas_.printf("%s%u%%", pet.batteryCharging ? "+" : "",
-                   static_cast<unsigned>(pet.batteryLevel));
+    canvas_.printf("%u%%", static_cast<unsigned>(pet.batteryLevel));
   } else {
     canvas_.print("BAT --");
   }
@@ -247,6 +269,9 @@ PetAction PetDisplay::handleTouch(int x, int y, PetState& pet) {
       nameEditorOpen_ = true;
     }
     return PetAction::none;
+  }
+  if (x >= 120 && x < 200 && y >= 112 && y < 188) {
+    return PetAction::cycleAvatar;
   }
   if (y < 190 || y >= 229) return PetAction::none;
 

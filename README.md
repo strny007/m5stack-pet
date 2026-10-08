@@ -14,8 +14,10 @@ Tap one of the four buttons along the bottom of the screen:
 - **Sleep / Wake** restores energy over time while the pet sleeps.
 - **Shake** the Core2 to wake the pet if it is asleep and make it excited.
 - Tap the pet's name in the top bar to rename it with the on-screen keyboard.
+- Tap the pet to cycle between the round-eared, cat, and bunny avatars; the
+  selected look is saved.
 - Tap **SND / MUTE** in the top bar to toggle sound; the setting is remembered.
-- The top bar also shows battery percentage and a `+` while charging.
+- The top bar shows battery percentage and a lightning bolt while charging.
 - Care actions and shake reactions give a short vibration.
 
 The pet plays short sound cues when you care for it or shake the device. Shake
